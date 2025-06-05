@@ -145,19 +145,7 @@ export default function TermsAndConditions() {
               <Text>
                 Si tienes preguntas o inquietudes sobre estos Términos y Condiciones, puedes contactarnos en:
               </Text>
-              <List spacing={2} pl={4} styleType="disc">
-                <ListItem>
-                  <strong>Email:</strong>{" "}
-                  <Link href="mailto:soporte@andro.com" color="teal.500">
-                    soporte@andro.com
-                  </Link>
-                </ListItem>
-                <ListItem>
-                  <strong>Dirección:</strong> Calle Ejemplo 123, Colonia Centro, Ciudad, País.
-                </ListItem>
-                <ListItem>
-                  <strong>Teléfono:</strong> +52 55 1234 5678
-                </ListItem>
+             
               </List>
             </VStack>
           </VStack>
