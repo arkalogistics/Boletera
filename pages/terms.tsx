@@ -147,7 +147,19 @@ export default function TermsAndConditions() {
                 Estos Términos y Condiciones se regirán e interpretarán de acuerdo con las leyes del país donde operamos. Para cualquier controversia derivada de estos Términos, ambas partes se someten a la jurisdicción de los tribunales competentes en dicha localidad.
               </Text>
 
-              
+              <Heading as="h2" size="lg">
+                9. Contacto
+              </Heading>
+              <Text>
+                Si tienes preguntas o inquietudes sobre estos Términos y Condiciones, puedes contactarnos en:
+              </Text>
+              <List spacing={2} pl={4} styleType="disc">
+                <ListItem>
+                  Correo: <Link color="cyan.500" href="mailto:soporte@andro.com">soporte@andro.com</Link>
+                </ListItem>
+                <ListItem>
+                  Teléfono: <Link color="cyan.500" href="tel:+521234567890">+52 1 234 567 890</Link>
+                </ListItem>
               </List>
             </VStack>
           </VStack>
