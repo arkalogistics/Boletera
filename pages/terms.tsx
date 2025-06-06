@@ -1,13 +1,15 @@
 // pages/terms.tsx
-import { Box, Heading, Text, VStack, List, ListItem, Link, Divider } from "@chakra-ui/react";
+import { Box, Heading, Text, VStack, List, ListItem, Divider } from "@chakra-ui/react";
 import { useColorModeValue } from "@chakra-ui/react";
 import Head from "next/head";
 
 export default function TermsAndConditions() {
+  // Colores de fondo y texto según el modo (light/dark)
   const bg = useColorModeValue("gray.50", "gray.900");
   const textColor = useColorModeValue("gray.800", "gray.200");
   const headingColor = useColorModeValue("gray.900", "gray.100");
 
+  // Fecha de “Última actualización”
   const today = new Date();
   const formattedDate = today.toLocaleDateString("es-MX", {
     day: "2-digit",
@@ -26,7 +28,13 @@ export default function TermsAndConditions() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      <Box as="main" bg={bg} minH="100vh" py={{ base: 8, md: 12 }} px={{ base: 4, md: 8 }}>
+      <Box
+        as="main"
+        bg={bg}
+        minH="100vh"
+        py={{ base: 8, md: 12 }}
+        px={{ base: 4, md: 8 }}
+      >
         <Box
           maxW="container.md"
           mx="auto"
@@ -61,7 +69,7 @@ export default function TermsAndConditions() {
                   <strong>Comportamiento:</strong> Te comprometes a utilizar la plataforma de forma legal, respetuosa y conforme a todas las leyes aplicables.
                 </ListItem>
                 <ListItem>
-                  <strong>Acción prohibida:</strong> No publicarás contenido fraudulento, ni harás uso de la plataforma para actividades ilegales.
+                  <strong>Acción prohibida:</strong> No publicarás contenido fraudulento ni harás uso de la plataforma para actividades ilegales.
                 </ListItem>
               </List>
 
@@ -94,7 +102,7 @@ export default function TermsAndConditions() {
                   <strong>Seguridad de la cuenta:</strong> Eres responsable de mantener la confidencialidad de tu contraseña y de cualquier actividad que ocurra bajo tu cuenta.
                 </ListItem>
                 <ListItem>
-                  <strong>Prohibición de compartir:</strong> No debes compartir tu contraseña, ni permitir que terceros utilicen tu cuenta.
+                  <strong>Prohibición de compartir:</strong> No debes compartir tu contraseña ni permitir que terceros utilicen tu cuenta.
                 </ListItem>
               </List>
 
@@ -139,13 +147,7 @@ export default function TermsAndConditions() {
                 Estos Términos y Condiciones se regirán e interpretarán de acuerdo con las leyes del país donde operamos. Para cualquier controversia derivada de estos Términos, ambas partes se someten a la jurisdicción de los tribunales competentes en dicha localidad.
               </Text>
 
-              <Heading as="h2" size="lg">
-                9. Contacto
-              </Heading>
-              <Text>
-                Si tienes preguntas o inquietudes sobre estos Términos y Condiciones, puedes contactarnos en:
-              </Text>
-             
+              
               </List>
             </VStack>
           </VStack>
