@@ -1,5 +1,5 @@
 // pages/terms.tsx
-import { Box, Heading, Text, VStack, List, ListItem, Divider } from "@chakra-ui/react";
+import { Box, Heading, Text, VStack, List, ListItem, Divider ,Link} from "@chakra-ui/react";
 import { useColorModeValue } from "@chakra-ui/react";
 import Head from "next/head";
 
