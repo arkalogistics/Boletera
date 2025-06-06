@@ -1,4 +1,5 @@
 // pages/events/[id]/checkout.tsx
+
 import { useRouter } from "next/router";
 import { useEffect, useState, ChangeEvent } from "react";
 import {
@@ -24,6 +25,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
 
+  // Cuando cambia la query (router.isReady), parseamos “seats”
   useEffect(() => {
     if (!router.isReady) return;
     if (typeof seats === "string" && seats.length > 0) {
@@ -80,17 +82,20 @@ export default function CheckoutPage() {
     return "gray";
   };
 
-  // Precios de ejemplo (puedes omitir si tu backend los calcula)
+  // Ajustamos los precios a los valores reales:
   const pricePerCategory: Record<string, number> = {
-    VIP: 150,
-    PREFERENTE: 100,
-    GENERAL: 60,
+    VIP: 380,
+    PREFERENTE: 350,
+    GENERAL: 350,
   };
+
+  // Sumamos todos los precios según la categoría de cada asiento:
   const totalAmount = selectedSeats.reduce((acc, seat) => {
     const cat = getCategory(seat);
     return acc + (pricePerCategory[cat] || 0);
   }, 0);
 
+  // Si seguimos cargando la query params, mostramos un spinner:
   if (loading) {
     return (
       <Center h="60vh" bg={useColorModeValue("gray.50", "gray.800")}>
@@ -189,10 +194,15 @@ export default function CheckoutPage() {
             <Text fontSize="lg" fontWeight="semibold" mb={2}>
               Información de contacto
             </Text>
-            <VStack as="form" spacing={4} w="full" onSubmit={(e) => {
+            <VStack
+              as="form"
+              spacing={4}
+              w="full"
+              onSubmit={(e) => {
                 e.preventDefault();
                 handlePay();
-              }}>
+              }}
+            >
               <FormControl isRequired>
                 <FormLabel>Correo electrónico</FormLabel>
                 <Input

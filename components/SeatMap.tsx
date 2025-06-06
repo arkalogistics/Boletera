@@ -1,4 +1,5 @@
 // components/SeatMap.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -42,18 +43,18 @@ const rowDefinitions: { row: string; cols: number }[] = [
 ];
 
 export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }) => {
-  // ─── 1) Estados compartidos ───────────────────────────────────────────────────
+  // ─── 1) Estados ───────────────────────────────────────────────────
   const [selectedSeats, setSelectedSeats] = useState<Set<string>>(new Set());
   const [seatList, setSeatList] = useState<Seat[]>([]);
 
-  // ─── 2) Hooks de breakpoint (todos anteriores a cualquier return) ──────────────
+  // ─── 2) Hooks de breakpoint ────────────────────────────────────────
   const isMobile = useBreakpointValue({ base: true, sm: true, md: false });
   const gapUnits = useBreakpointValue<number>({ base: 1, sm: 2, md: 2 }) ?? 2;
   const seatWidth = useBreakpointValue<number>({ base: 30, sm: 40, md: 50 }) ?? 50;
   const seatHeight = useBreakpointValue<number>({ base: 28, sm: 35, md: 40 }) ?? 40;
   const gapPx = gapUnits * 4;
 
-  // ─── 3) Carga de asientos cuando cambian soldSeats ───────────────────────────────
+  // ─── 3) Generar la lista de asientos (cuando cambian los “soldSeats”) ─────────────────
   useEffect(() => {
     const soldSet = new Set(soldSeats);
     const allSeats: Seat[] = [];
@@ -67,9 +68,11 @@ export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }
     });
 
     setSeatList(allSeats);
+    // Reiniciar selección si cambiaron los soldSeats
+    setSelectedSeats(new Set());
   }, [soldSeats]);
 
-  // ─── 4) Función para alternar selección ─────────────────────────────────────────
+  // ─── 4) Función para alternar selección de butacas ─────────────────────────────────
   const toggleSeat = (seatId: string) => {
     const updated = new Set(selectedSeats);
     if (updated.has(seatId)) {
@@ -83,7 +86,7 @@ export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }
     }
   };
 
-  // ─── 5) Colores según categoría/estado ──────────────────────────────────────────
+  // ─── 5) Colores según categoría/estado ─────────────────────────────────────────────
   const getCategory = (row: string) => {
     const r = row.toUpperCase();
     if (r === "A") return "VIP";
@@ -104,15 +107,13 @@ export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }
     return getBaseColor(seat.row);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────────
-  //  Versión móvil (base + sm)
-  // ─────────────────────────────────────────────────────────────────────────────────
+  // ─── 6) Renderizado en MÓVIL ─────────────────────────────────────────────────────────
   if (isMobile) {
-    // Relación ancho:alto para móvil (solo se usa aquí)
+    // Para móvil usamos padding-bottom en lugar de px/py fijos
     const paddingBottomRatio = {
       base: "93.33%",   // 28/30
       sm: "87.5%",      // 35/40
-      md: "80%",        // no aplica, pero lo definimos por consistencia
+      md: "80%",        // no aplica, pero lo definimos
     };
 
     return (
@@ -161,7 +162,7 @@ export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }
                         key={seat.id}
                         position="relative"
                         w="100%"
-                        pb={paddingBottomRatio}
+                        pb={paddingBottomRatio} 
                         cursor={
                           seat.status === "reserved" ? "not-allowed" : "pointer"
                         }
@@ -217,11 +218,7 @@ export const SeatMap: React.FC<SeatMapProps> = ({ soldSeats, onSelectionChange }
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────────
-  //  Versión escritorio (md en adelante)
-  // ─────────────────────────────────────────────────────────────────────────────────
-
-  // Cálculo del ancho total mínimo para forzar scroll horizontal si hace falta
+  // ─── 7) Renderizado en DESKTOP (md en adelante) ────────────────────────────────────
   const maxCols = Math.max(...rowDefinitions.map((r) => r.cols));
   const totalWidthPx = maxCols * seatWidth + (maxCols - 1) * gapPx;
 

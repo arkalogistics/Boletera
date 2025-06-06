@@ -1,73 +1,89 @@
 // lib/email.ts
-import nodemailer from "nodemailer";
-import QRCode from "qrcode";
+import Mailjet from "node-mailjet";
 
-if (
-  !process.env.SMTP_HOST ||
-  !process.env.SMTP_PORT ||
-  !process.env.SMTP_USER ||
-  !process.env.SMTP_PASS
-) {
-  throw new Error(
-    "❌ Faltan variables SMTP en .env.local (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)."
-  );
+interface SendTicketEmailOpts {
+  to: string;
+  tokens: string[];
 }
 
-// 1) Configura el transport de nodemailer usando SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: Number(process.env.SMTP_PORT) === 465, // true si usas puerto 465 (SSL), false si 587 o 25 (STARTTLS)
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+/**
+ * Conecta a Mailjet usando API Key y Secret Key (variables de entorno MJ_APIKEY_PUBLIC y MJ_APIKEY_PRIVATE).
+ */
+const mailjet = Mailjet.apiConnect(
+  process.env.MJ_APIKEY_PUBLIC!,
+  process.env.MJ_APIKEY_PRIVATE!
+);
 
-// 2) Función para enviar correo con el QR embebido
-export async function sendTicketEmail(to: string, token: string) {
+export async function sendTicketEmail({ to, tokens }: SendTicketEmailOpts) {
+  if (
+    !process.env.MJ_APIKEY_PUBLIC ||
+    !process.env.MJ_APIKEY_PRIVATE ||
+    !process.env.NEXT_PUBLIC_APP_URL
+  ) {
+    throw new Error(
+      "❌ Asegúrate de tener MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE y NEXT_PUBLIC_APP_URL en tu .env.local"
+    );
+  }
+
+  // Construimos un bloque HTML con un enlace por cada token
+  const ticketLinksHtml = tokens
+    .map((token) => {
+      // La URL a la que el usuario será dirigido; por ejemplo:
+      const ticketUrl = `${process.env.NEXT_PUBLIC_APP_URL}/ticket/${token}`;
+      return `
+        <li style="margin-bottom: 12px;">
+          <a href="${ticketUrl}" style="color: #1a73e8; text-decoration: none; font-weight: bold;">
+            Ver mi boleto (token: ${token})
+          </a>
+        </li>
+      `;
+    })
+    .join("");
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <h2 style="margin-bottom: 16px;">¡Tus entradas están listas! 🎫</h2>
+      <p style="margin-bottom: 24px;">
+        Gracias por tu compra. A continuación encontrarás un enlace para cada boleto que adquiriste:
+      </p>
+      <ul style="padding-left: 20px; margin-bottom: 24px;">
+        ${ticketLinksHtml}
+      </ul>
+      <hr style="margin: 24px 0; border-color: #ccc;" />
+      <p style="font-size: 0.85em; color: #666;">
+        Cuando accedas a cualquiera de estos enlaces, el sistema validará tu ticket y lo marcará como usado.
+        Si vuelves a escanear la misma URL, aparecerá como “boleto inválido” (ya fue canjeado).
+      </p>
+    </div>
+  `;
+
   try {
-    // 2.1) Generar data URL del QR (base64) a partir del token
-    //     Para que el correo contenga <img src="data:image/png;base64,...." />
-    const qrDataUrl = await QRCode.toDataURL(token, {
-      errorCorrectionLevel: "H",
-      type: "image/png",
-      width: 300,
-      margin: 2,
-    });
-    // qrDataUrl es algo como "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA..."
+    const request = mailjet
+      .post("send", { version: "v3.1" })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: "andraeventsofficial@gmail.com", // Debe estar validado en Mailjet
+              Name:  "Andro",
+            },
+            To: [
+              {
+                Email: to,
+                Name:  "", // opcional
+              },
+            ],
+            Subject: "Tus tickets están listos 🎟️",
+            TextPart:
+              "Gracias por tu compra. Accede a tus boletos desde los enlaces proporcionados.",
+            HTMLPart: htmlBody,
+          },
+        ],
+      });
 
-    // 2.2) Definir el contenido HTML del correo
-    const htmlBody = `
-      <h2 style="color: #333;">Tu entrada está lista 🎫</h2>
-      <p>Gracias por tu compra. A continuación encontrarás tu código QR. <br>
-         Por favor, muéstralo en la entrada al evento.</p>
-      <div style="margin: 20px 0;">
-        <!-- Insertamos el QR como data URL -->
-        <img src="${qrDataUrl}" alt="Código QR de tu ticket" style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 10px; background: #fff;" />
-      </div>
-      <p style="font-size: 0.9em; color: #666;">
-        Si tu lector de correo no muestra imágenes, puedes usar este token manualmente: <br>
-        <code>${token}</code>
-      </p>
-      <hr>
-      <p style="font-size: 0.8em; color: #999;">
-        Este correo ha sido enviado de forma automática. Por favor, no respondas a esta dirección.
-      </p>
-    `;
-
-    // 2.3) Enviar el correo
-    await transporter.sendMail({
-      from: `"Cinema de Cámara" <${process.env.SMTP_USER}>`, // remitente
-      to, // destinatario (email del usuario)
-      subject: "Tu ticket para Cinema de Cámara 📩",
-      html: htmlBody,
-      text: `Gracias por tu compra. Tu token de entrada es: ${token}`,
-    });
-
-    console.log(`✅ Correo de ticket enviado a ${to}`);
-  } catch (err) {
-    console.error("❌ Error enviando correo de ticket:", err);
-    throw err; // Propaga el error al caller
+    await request; // si falla arrojará excepción
+  } catch (err: any) {
+    console.error("Mailjet error enviando boletos:", err);
+    throw new Error("Error enviando correo de boletos con Mailjet");
   }
 }
