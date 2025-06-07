@@ -203,7 +203,7 @@ const HomePage: NextPage<HomePageProps> = ({ events }) => {
                         alt={`Portada de ${evt.name}`}
                         objectFit="cover"
                         w="100%"
-                        h="200px"
+                        h="500px"
                         loading="lazy"
                       />
                     )}
