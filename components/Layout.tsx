@@ -76,7 +76,7 @@ export default function Layout({ children }: LayoutProps) {
                 </ChakraLink>
               </NextLink>
               <Text fontSize="sm" color="gray.500" maxW="sm">
-                Andro es la plataforma líder en venta de boletos para tus
+                Andra es la plataforma líder en venta de boletos para tus
                 eventos favoritos. Conecta, vive y comparte momentos únicos.
               </Text>
             </Box>
