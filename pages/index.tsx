@@ -148,7 +148,7 @@ const HomePage: NextPage<HomePageProps> = ({ events }) => {
               Andra Eventos
             </Heading>
             <Text fontSize={{ base: "md", md: "lg" }} color="whiteAlpha.800">
-              Compra tus boletos en segundos para los mejores shows de 2025.
+              Compra tus boletos en segundos para los mejores shows.
             </Text>
           </VStack>
         </Box>
