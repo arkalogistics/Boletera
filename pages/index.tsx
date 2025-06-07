@@ -197,7 +197,9 @@ const HomePage: NextPage<HomePageProps> = ({ events }) => {
                     _hover={{ shadow: "lg" }}
                     transition="box-shadow 0.2s"
                   >
+                   
                     {evt.image_url && (
+                        <NextLink href={`/events/${evt.id}`} passHref>
                       <Image
                         src={evt.image_url}
                         alt={`Portada de ${evt.name}`}
@@ -206,7 +208,9 @@ const HomePage: NextPage<HomePageProps> = ({ events }) => {
                         h="500px"
                         loading="lazy"
                       />
+                      </NextLink>
                     )}
+                    
                     <Box p={6}>
                       <Heading size="md" mb={2} color={textColor}>
                         <NextLink href={`/events/${evt.id}`} passHref>
