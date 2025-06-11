@@ -85,7 +85,7 @@ export default function CheckoutPage() {
   // Ajustamos los precios a los valores reales:
   const pricePerCategory: Record<string, number> = {
     VIP: 380,
-    PREFERENTE: 350,
+    PREFERENTE: 360,
     GENERAL: 350,
   };
 
