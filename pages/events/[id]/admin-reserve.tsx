@@ -40,23 +40,25 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
     }
     setLoading(true);
     try {
-      const response = await fetch("/api/checkout", {
+      // Nuevo endpoint manual-create para tickets manuales (sin Stripe)
+      const response = await fetch("/api/tickets/manual-create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventId,
           seats: selectedSeats,
-          userEmail: email.trim() || "manual@efectivo.com",
+          userEmail: email.trim(),
           buyer,
-          manual: true,
         }),
       });
 
       const res = await response.json();
-      if (response.ok) {
+      if (response.ok && res.success) {
         toast({
           title: "Reservado exitosamente",
-          description: "El pago por efectivo quedó registrado.",
+          description: email.trim()
+            ? "Se enviaron los boletos por correo electrónico."
+            : "Las butacas fueron asignadas correctamente.",
           status: "success",
           isClosable: true,
         });
@@ -66,7 +68,7 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
       } else {
         toast({
           title: "Error",
-          description: res.message || "No se pudo reservar.",
+          description: res.error || "No se pudo reservar.",
           status: "error",
           isClosable: true,
         });
