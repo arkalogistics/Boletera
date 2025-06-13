@@ -1,13 +1,16 @@
 import { getIronSession } from "iron-session";
 import type { GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult } from "next";
 import { sessionOptions } from "./sessionConfig";
+import type { IronSession } from "iron-session";
+import type { AdminSessionData } from "../types/iron-session"; // Ajusta el path si es necesario
 
 export function withAdminSessionSsr<P extends { [key: string]: any }>(
   handler: GetServerSideProps<P>
 ): GetServerSideProps<P> {
   return async function(context: GetServerSidePropsContext): Promise<GetServerSidePropsResult<P>> {
     const { req, res } = context;
-    const session = await getIronSession(req, res, sessionOptions);
+const session = await getIronSession<AdminSessionData>(req, res, sessionOptions);
+
     (req as any).session = session;
 
     if (session.adminAuthed) {
