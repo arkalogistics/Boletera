@@ -78,7 +78,7 @@ export default function EventPage({
   return (
     <>
       <Head>
-        <title>{title} | Andro Eventos</title>
+        <title>{title} | Andra Eventos</title>
         <meta
           name="description"
           content={`Compra tus boletos para ${title} en ${place} el ${formattedDate}. ${description.slice(
