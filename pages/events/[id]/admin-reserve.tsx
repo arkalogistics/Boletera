@@ -1,15 +1,20 @@
 import { GetServerSideProps } from "next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { withAdminSessionSsr } from "../../../lib/withAdminSessionSsr";
 import { AdminSsrLogin } from "../../../components/AdminSsrLogin";
+import { SeatMap } from "../../../components/SeatMap";
 import {
-  Box, Button, Center, Divider, Flex, FormControl, FormLabel,
-  Input, Text, VStack, useToast,
+  Box, Button, Center, Divider, FormControl, FormLabel,
+  Input, Text, VStack, useToast, Spinner,
 } from "@chakra-ui/react";
 
-const ALL_SEATS = [
-  "A-1", "A-2", "A-3", "B-1", "B-2", "C-1", "C-2", "D-1",
-];
+// Obtener los asientos vendidos desde Supabase vía API/DB
+async function fetchSoldSeats(eventId: string): Promise<string[]> {
+  const res = await fetch(`/api/tickets/sold-seats?eventId=${eventId}`);
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.soldSeats ?? [];
+}
 
 export const getServerSideProps: GetServerSideProps = withAdminSessionSsr(async (ctx) => {
   const { id } = ctx.query;
@@ -23,11 +28,17 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function toggleSeat(seat: string) {
-    setSelectedSeats((prev) =>
-      prev.includes(seat) ? prev.filter((s) => s !== seat) : [...prev, seat]
-    );
-  }
+  const [soldSeats, setSoldSeats] = useState<string[]>([]);
+  const [loadingSeats, setLoadingSeats] = useState(true);
+
+  // Cargar los asientos ocupados al cargar la página o cambiar el evento
+  useEffect(() => {
+    if (!eventId) return;
+    setLoadingSeats(true);
+    fetchSoldSeats(eventId)
+      .then(setSoldSeats)
+      .finally(() => setLoadingSeats(false));
+  }, [eventId]);
 
   async function handleReserve() {
     if (!eventId || selectedSeats.length === 0) {
@@ -40,7 +51,6 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
     }
     setLoading(true);
     try {
-      // Nuevo endpoint manual-create para tickets manuales (sin Stripe)
       const response = await fetch("/api/tickets/manual-create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,6 +75,8 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
         setSelectedSeats([]);
         setBuyer("");
         setEmail("");
+        // Recargar los asientos ocupados tras reservar
+        fetchSoldSeats(eventId).then(setSoldSeats);
       } else {
         toast({
           title: "Error",
@@ -80,7 +92,7 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
     }
   }
 
-  // Si NO está autenticado, muestra el login SSR
+  // SSR: si no está autenticado, pide login
   if (!authed) {
     return (
       <Center minH="100vh" bg="gray.900">
@@ -92,26 +104,20 @@ export default function AdminReservePage({ authed, error, eventId }: any) {
   // Panel de reserva manual
   return (
     <Box minH="100vh" bg="gray.900" py={10} px={2}>
-      <Box maxW="md" mx="auto" bg="gray.800" borderRadius="lg" p={8} color="white" boxShadow="xl">
+      <Box maxW="100%" mx="auto" bg="gray.800" borderRadius="lg" p={8} color="white" boxShadow="xl">
         <Text fontSize="2xl" fontWeight="bold" mb={4}>Venta Manual (Efectivo)</Text>
         <Text>Evento: <b>{eventId}</b></Text>
         <Divider my={3} borderColor="gray.600" />
         <VStack spacing={4} align="start">
           <Text fontWeight="semibold">Selecciona las butacas:</Text>
-          <Flex wrap="wrap" gap={2}>
-            {ALL_SEATS.map((seat) => (
-              <Button
-                key={seat}
-                size="sm"
-                colorScheme={selectedSeats.includes(seat) ? "cyan" : "gray"}
-                variant={selectedSeats.includes(seat) ? "solid" : "outline"}
-                onClick={() => toggleSeat(seat)}
-                mb={1}
-              >
-                {seat}
-              </Button>
-            ))}
-          </Flex>
+          {loadingSeats ? (
+            <Spinner color="cyan.400" />
+          ) : (
+            <SeatMap
+              soldSeats={soldSeats}
+              onSelectionChange={setSelectedSeats}
+            />
+          )}
           <Divider borderColor="gray.600" />
           <FormControl>
             <FormLabel>Nombre del comprador</FormLabel>
