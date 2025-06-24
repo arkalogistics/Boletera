@@ -3,7 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "../../../lib/supabaseClient";
 import { v4 as uuidv4 } from "uuid";
-import { sendTicketEmail } from "../../../lib/email";
+import { sendTicketEmail } from "../../../lib/email"; // Ajusta si tu función está en otro lado
 
 type Data =
   | { success: true; tokens: string[] }
@@ -15,65 +15,99 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res
-      .status(405)
-      .json({ success: false, error: "Method Not Allowed" });
+    return res.status(405).json({ success: false, error: "Method Not Allowed" });
   }
 
-  const { eventId, seats, userEmail, buyer } = req.body;
+  const { eventId, seats, buyer, userEmail } = req.body as {
+    eventId: string;
+    seats: string[];
+    buyer: string;
+    userEmail?: string;
+  };
 
-  if (!eventId || !seats || !Array.isArray(seats) || seats.length === 0) {
-    return res
-      .status(400)
-      .json({ success: false, error: "Faltan parámetros" });
+  if (!eventId || !seats?.length || !buyer) {
+    return res.status(400).json({ success: false, error: "Faltan datos obligatorios." });
   }
 
   try {
-    // (Opcional) Crea un "order" manual si lo necesitas, o solo deja order_id = null
-    // --- Crear los tickets manualmente ---
+    // 1. Crear una orden manual
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert([
+        {
+          event_id: eventId,
+          user_email: userEmail || null,
+         
+        // Asume que tienes este campo. Si no, quítalo.
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select("id, user_email")
+      .single();
+
+    if (orderError || !order) {
+      console.error("Error insertando orden manual:", orderError);
+      return res.status(500).json({ success: false, error: "No se pudo crear la orden manual." });
+    }
+
+    const orderId = order.id;
+    const userEmailFinal = order.user_email;
+
+    // 2. Insertar asientos a order_items
+    const orderItems = seats.map((seatId) => ({
+      order_id: orderId,
+      seat_id: seatId,
+    }));
+    const { error: orderItemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (orderItemsError) {
+      console.error("Error insertando order_items:", orderItemsError);
+      return res.status(500).json({ success: false, error: "No se pudo asignar butacas a la orden." });
+    }
+
+    // 3. Insertar boletos en tickets
     const tokens: string[] = [];
-    for (const seat_id of seats) {
-      const newToken = uuidv4();
-      const { data: ticketRow, error: insertError } = await supabase
+    for (const seatId of seats) {
+      const token = uuidv4();
+      const { data: ticketRow, error: ticketError } = await supabase
         .from("tickets")
         .insert([
           {
-            event_id: eventId,
-            seat_id,
-            token: newToken,
-            buyer: buyer || null,
-            email: userEmail || null,
+            order_id: orderId,
+            seat_id: seatId,
+            token,
             used: false,
-            created_at: new Date().toISOString(),
-            order_id: null, // Opcional: puedes guardar null o un id especial
           },
         ])
         .select("token")
         .single();
 
-      if (insertError || !ticketRow) {
-        return res
-          .status(500)
-          .json({ success: false, error: "Error interno al crear ticket." });
+      if (ticketError || !ticketRow) {
+        console.error("Error creando ticket para asiento", seatId, ticketError);
+        return res.status(500).json({
+          success: false,
+          error: `No se pudo crear el boleto para la butaca ${seatId}`,
+        });
       }
       tokens.push(ticketRow.token);
     }
 
-    // ENVIAR CORREO
-    if (userEmail) {
+    // 4. Mandar email si hay correo
+    if (userEmailFinal) {
       try {
-        await sendTicketEmail({ to: userEmail, tokens });
+        await sendTicketEmail({ to: userEmailFinal, tokens });
       } catch (emailErr) {
-        // Los tickets ya están en BD, pero hubo error al mandar el correo.
-        // No abortamos, solo notificamos en logs y seguimos.
-        console.error("Error enviando correo de boletos:", emailErr);
+        console.error("Error enviando correo:", emailErr);
+        // No abortar por error de correo
       }
     }
 
+    // 5. Listo
     return res.status(200).json({ success: true, tokens });
   } catch (err) {
-    return res
-      .status(500)
-      .json({ success: false, error: "Error interno del servidor." });
+    console.error("Error inesperado:", err);
+    return res.status(500).json({ success: false, error: "Error interno del servidor." });
   }
 }
